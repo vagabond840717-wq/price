@@ -202,7 +202,7 @@ body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: va
       </div>
 
       <div class="panel">
-        <div class="panel-head"><span class="pbadge lv">리브애니웨어</span><span class="panel-sub">동일 순수익 달성 등록가 역산</span></div>
+        <div class="panel-head"><span class="pbadge lv">리브애니웨어</span><span class="panel-sub">에어비앤비 동일 등록가 기준 순수익 비교</span></div>
         <div class="panel-body">
           <div class="row2">
             <div class="field">
@@ -318,14 +318,20 @@ function makeRevRow(isWe, guests, revListed, net, net30) {
   </tr>`;
 }
 
-function makeLvRow(isWe, guests, revListed, net7, net30) {
+function makeLvRow(isWe, guests, listed, net7, net30, abNet7, abNet30) {
   const cls = isWe ? ' class="we-row"' : '';
   const tag = `<span class="tag ${isWe?'we':'wd'}">${isWe?'주말':'주중'}</span>`;
+  const diff7  = net7  - abNet7;
+  const diff30 = net30 - abNet30;
+  const diffColor7  = diff7  >= 0 ? 'color:var(--green);font-size:11px' : 'color:var(--red);font-size:11px';
+  const diffColor30 = diff30 >= 0 ? 'color:var(--green);font-size:11px' : 'color:var(--red);font-size:11px';
+  const diffStr7  = (diff7  >= 0 ? '+' : '') + Math.round(diff7).toLocaleString('ko-KR');
+  const diffStr30 = (diff30 >= 0 ? '+' : '') + Math.round(diff30).toLocaleString('ko-KR');
   return `<tr${cls}>
     <td>${tag}${guests}인</td>
-    <td data-label="역산 등록가" class="col-rev">${won(revListed)}</td>
-    <td data-label="순수익(7박)" class="col-net">${won(net7)}</td>
-    <td data-label="순수익(30박)" class="col-net30">${won(net30)}</td>
+    <td data-label="등록가">${won(listed)}</td>
+    <td data-label="순수익(7박)" class="col-net">${won(net7)}<br><span style="${diffColor7}">(${diffStr7})</span></td>
+    <td data-label="순수익(30박)" class="col-net30">${won(net30)}<br><span style="${diffColor30}">(${diffStr30})</span></td>
   </tr>`;
 }
 
@@ -348,9 +354,9 @@ function revHeader() {
 function lvHeader() {
   return `<thead><tr>
     <th>구분</th>
-    <th class="th-rev">역산 등록가 <span style="font-weight:400;font-size:9px">(7박 총액)</span></th>
-    <th class="th-net">순수익 (7박)</th>
-    <th class="th-net30">순수익 (30박)</th>
+    <th>등록가 <span style="font-weight:400;font-size:9px">(에어비앤비 동일)</span></th>
+    <th class="th-net">순수익 (7박) <span style="font-weight:400;font-size:9px">(vs 에어비앤비)</span></th>
+    <th class="th-net30">순수익 (30박) <span style="font-weight:400;font-size:9px">(vs 에어비앤비)</span></th>
   </tr></thead>`;
 }
 
@@ -394,15 +400,21 @@ function calc() {
     const bkWe = reverseList(we.net, bkComm, bkPrmo, clean);
     const trWd = reverseList(wd.net, trComm, trPrmo, clean);
     const trWe = reverseList(we.net, trComm, trPrmo, clean);
-    const lvWd = reverseListNights(wd.net7, lvComm, lvPrmo, clean, 7);
-    const lvWe = reverseListNights(we.net7, lvComm, lvPrmo, clean, 7);
-
     if (bkWd) bkRows += makeRevRow(false, g, bkWd, wd.net, wd.net30);
     if (bkWe) bkRows += makeRevRow(true,  g, bkWe, we.net, we.net30);
     if (trWd) trRows += makeRevRow(false, g, trWd, wd.net, wd.net30);
     if (trWe) trRows += makeRevRow(true,  g, trWe, we.net, we.net30);
-    if (lvWd) lvRows += makeLvRow(false, g, lvWd * 7, wd.net7, wd.net30);
-    if (lvWe) lvRows += makeLvRow(true,  g, lvWe * 7, we.net7, we.net30);
+
+    // 리브애니웨어: 에어비앤비와 동일한 등록가로 순수익 계산 (인원 추가요금 없이 기본가만)
+    const lvRate = effectiveRate(lvComm, lvPrmo);
+    const lvWdListed = abWdP; // 에어비앤비 기본가(인원추가 없이) 동일
+    const lvWeListed = abWeP;
+    const lvWdNet7  = (lvWdListed * (1 - lvRate)) * 7  - clean;
+    const lvWdNet30 = (lvWdListed * (1 - lvRate)) * 30 - clean;
+    const lvWeNet7  = (lvWeListed * (1 - lvRate)) * 7  - clean;
+    const lvWeNet30 = (lvWeListed * (1 - lvRate)) * 30 - clean;
+    lvRows += makeLvRow(false, g, lvWdListed, lvWdNet7, lvWdNet30, wd.net7, wd.net30);
+    lvRows += makeLvRow(true,  g, lvWeListed, lvWeNet7, lvWeNet30, we.net7, we.net30);
   }
 
   const abRate = effectiveRate(abFee, abPrmo);
@@ -419,11 +431,11 @@ function calc() {
     card('ab', 'Airbnb 순수익', abMeta, abHeader() + '<tbody>' + abRows + '</tbody>') +
     card('bk', 'Booking.com — 역산 등록가', bkMeta, revHeader() + '<tbody>' + bkRows + '</tbody>') +
     card('tr', 'Trip.com — 역산 등록가', trMeta, revHeader() + '<tbody>' + trRows + '</tbody>') +
-    card('lv', '리브애니웨어 — 역산 등록가', lvMeta, lvHeader() + '<tbody>' + lvRows + '</tbody>');
+    card('lv', '리브애니웨어 — 동일 등록가 순수익', lvMeta, lvHeader() + '<tbody>' + lvRows + '</tbody>');
 
   document.getElementById('footnote_area').innerHTML =
     `순수익(1박) = 등록가 − 수수료·프로모 − 청소비(1회)<br>
-     순수익(7박) = (등록가 − 수수료·프로모) × 7 − 청소비(1회) · 리브애니웨어 최소 7박 기준<br>
+     리브애니웨어: 에어비앤비와 동일한 등록가 기준 · 인원 추가요금 없이 기본가로만 계산 · 괄호는 에어비앤비 대비 차이<br>
      순수익(30박) = (등록가 − 수수료·프로모) × 30 − 청소비(1회)<br>
      역산 등록가 = 청소비 동일 조건에서 Airbnb 순수익과 같아지는 각 플랫폼 등록가<br>
      실효율 = 프로모 손실 + (1−프로모) × 수수료율`;
