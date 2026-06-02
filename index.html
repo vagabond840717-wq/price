@@ -370,21 +370,26 @@ function card(cls, name, meta, tableHtml) {
   </div>`;
 }
 
+function v(id, def) {
+  const s = document.getElementById(id).value;
+  return s === '' ? def : +s;
+}
+
 function calc() {
-  const abWdP  = +document.getElementById('ab_wd_p').value || 0;
-  const abWeP  = +document.getElementById('ab_we_p').value || 0;
-  const abFee  = +document.getElementById('ab_fee').value  || 15.5;
-  const abPrmo = +document.getElementById('ab_promo').value|| 0;
-  const bkComm = +document.getElementById('bk_comm').value || 17.5;
-  const bkPrmo = +document.getElementById('bk_promo').value|| 0;
-  const trComm = +document.getElementById('tr_comm').value || 15;
-  const trPrmo = +document.getElementById('tr_promo').value|| 0;
-  const lvComm = +document.getElementById('lv_comm').value || 10;
-  const lvPrmo = +document.getElementById('lv_promo').value|| 0;
-  const clean  = +document.getElementById('clean').value   || 0;
-  const extra  = +document.getElementById('extra').value   || 0;
-  const baseG  = +document.getElementById('base_g').value  || 2;
-  const maxG   = +document.getElementById('max_g').value   || 4;
+  const abWdP  = v('ab_wd_p', 0);
+  const abWeP  = v('ab_we_p', 0);
+  const abFee  = v('ab_fee',  15.5);
+  const abPrmo = v('ab_promo', 0);
+  const bkComm = v('bk_comm', 17.5);
+  const bkPrmo = v('bk_promo', 0);
+  const trComm = v('tr_comm', 15);
+  const trPrmo = v('tr_promo', 0);
+  const lvComm = v('lv_comm', 3.3);
+  const lvPrmo = v('lv_promo', 0);
+  const clean  = v('clean',   0);
+  const extra  = v('extra',   0);
+  const baseG  = v('base_g',  2);
+  const maxG   = v('max_g',   4);
 
   let abRows='', bkRows='', trRows='', lvRows='';
 
